@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>リンク確認中...</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .container {
+            text-align: center;
+            padding: 2rem;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+        }
+        .loading {
+            font-size: 1.2rem;
+            margin-bottom: 1rem;
+        }
+        .expired {
+            font-size: 1.5rem;
+            color: #ff6b6b;
+        }
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top: 4px solid #fff;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="loading-content">
+            <div class="loading">リンクを確認しています...</div>
+            <div class="spinner"></div>
+        </div>
+        <div id="expired-content" style="display: none;">
+            <div class="expired">⏰ このリンクは期限切れです</div>
+            <p>申し訳ありませんが、このリンクの有効期限が過ぎています。</p>
+        </div>
+    </div>
+
+    <script>
+        // ===== 設定部分 =====
+        // 1. 期限日時を設定（年, 月-1, 日, 時, 分, 秒）
+        const expireDate = new Date(2025, 7, 20, 18, 00, 00);
+        
+        // 2. リダイレクト先URLを設定
+        const targetURL = 'https://www.dmm.co.jp/dc/-/proxy/=/transfer_type=download/shop=doujin/product_id=d_414549/'; // ここに実際のURLを入力
+        
+        // 3. リダイレクト遅延時間（ミリ秒）
+        const redirectDelay = 2000; // 2秒後にリダイレクト
+        
+        // ===== システム部分（変更不要） =====
+        function checkTimeAndRedirect() {
+            const now = new Date();
+            
+            if (now > expireDate) {
+                // 期限切れの場合
+                document.getElementById('loading-content').style.display = 'none';
+                document.getElementById('expired-content').style.display = 'block';
+            } else {
+                // 期限内の場合、指定時間後にリダイレクト
+                setTimeout(() => {
+                    window.location.href = targetURL;
+                }, redirectDelay);
+            }
+        }
+        
+        // URLパラメータから動的に設定を読み取る機能（オプション）
+        function getUrlParams() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const expireParam = urlParams.get('expires');
+            const urlParam = urlParams.get('url');
+            
+            if (expireParam) {
+                // expires=2024-12-31-23-59 形式をサポート
+                const parts = expireParam.split('-');
+                if (parts.length >= 3) {
+                    const year = parseInt(parts[0]);
+                    const month = parseInt(parts[1]) - 1; // 月は0ベース
+                    const day = parseInt(parts[2]);
+                    const hour = parts[3] ? parseInt(parts[3]) : 23;
+                    const minute = parts[4] ? parseInt(parts[4]) : 59;
+                    return {
+                        expire: new Date(year, month, day, hour, minute),
+                        url: urlParam || targetURL
+                    };
+                }
+            }
+            return null;
+        }
+        
+        // パラメータがある場合は動的設定を使用
+        const params = getUrlParams();
+        if (params) {
+            expireDate.setTime(params.expire.getTime());
+            targetURL = params.url;
+        }
+        
+        // ページ読み込み時に実行
+        window.onload = function() {
+            checkTimeAndRedirect();
+        };
+    </script>
+</body>
+</html>
